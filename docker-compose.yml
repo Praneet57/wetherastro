@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: weather_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: weatherdb
+    ports:
+      - "3308:3306"
+    volumes:
+      - weather_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: weather_web
+    restart: always
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: mysql+pymysql://root:root@db:3306/weatherdb
+      OWM_API_KEY: your_openweathermap_api_key_here
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./app:/app
+
+volumes:
+  weather_mysql_data:

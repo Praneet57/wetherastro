@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e293b 100%);
+      min-height: 100vh; color: white; font-family: 'Segoe UI', sans-serif;
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
+    }
+    .search-bar { position: relative; }
+    .search-bar input {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      color: white; border-radius: 50px; padding: 12px 20px; font-size: 1rem;
+    }
+    .search-bar input::placeholder { color: rgba(255,255,255,0.5); }
+    .search-bar input:focus { background: rgba(255,255,255,0.15); border-color: #60a5fa; box-shadow: none; outline: none; }
+    .search-bar button {
+      position: absolute; right: 6px; top: 6px;
+      background: #3b82f6; border: none; border-radius: 50px; color: white; padding: 6px 20px;
+    }
+    .temp-display { font-size: 5rem; font-weight: 200; line-height: 1; }
+    .weather-icon { font-size: 5rem; }
+    .stat-item { text-align: center; padding: 12px; }
+    .stat-item .value { font-size: 1.4rem; font-weight: 600; }
+    .stat-item .label { font-size: 0.75rem; color: rgba(255,255,255,0.6); }
+    .forecast-card {
+      background: rgba(255,255,255,0.07); border-radius: 12px; padding: 12px;
+      text-align: center; flex: 1; min-width: 100px;
+    }
+    .history-item {
+      background: rgba(255,255,255,0.05); border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 8px; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .history-item:hover { background: rgba(255,255,255,0.12); }
+    .spinner-ring {
+      width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #60a5fa; border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #mainWeather { display: none; }
+    #errorBox { display: none; }
+    .sunrise-sunset { font-size: 0.8rem; color: rgba(255,255,255,0.7); }
+  </style>
+</head>
+<body>
+<div class="container py-5" style="max-width:900px;">
+  <div class="text-center mb-4">
+    <h2 class="fw-bold"><i class="bi bi-cloud-sun-fill me-2 text-warning"></i>Weather Dashboard</h2>
+    <p class="text-white-50 small">Live weather data powered by OpenWeatherMap</p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar mb-4">
+    <input type="text" id="cityInput" placeholder="Search any city (e.g. Chennai, London, Tokyo...)" class="form-control w-100"
+      onkeydown="if(event.key==='Enter') searchWeather()" />
+    <button onclick="searchWeather()"><i class="bi bi-search me-1"></i>Search</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="loadingBox" class="text-center py-5 d-none">
+    <div class="spinner-ring mx-auto mb-3"></div>
+    <p class="text-white-50">Fetching weather data...</p>
+  </div>
+
+  <!-- Error -->
+  <div id="errorBox" class="glass-card p-4 text-center mb-4">
+    <i class="bi bi-exclamation-circle text-danger fs-2 mb-2 d-block"></i>
+    <p id="errorMsg" class="mb-0"></p>
+  </div>
+
+  <div id="mainWeather">
+    <!-- Current Weather -->
+    <div class="glass-card p-4 mb-4">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h3 class="fw-bold mb-0" id="cityName">—</h3>
+          <p class="text-white-50 mb-3" id="weatherDate">—</p>
+          <div class="d-flex align-items-center gap-3">
+            <div class="temp-display" id="tempDisplay">—°</div>
+            <div>
+              <img id="weatherIconImg" src="" alt="" width="80" />
+              <p class="mb-0 mt-1" id="weatherDesc">—</p>
+            </div>
+          </div>
+          <p class="text-white-50 small mt-2" id="feelsLike">Feels like —</p>
+        </div>
+        <div class="col-md-6">
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="stat-item glass-card">
+                <i class="bi bi-droplet-fill text-info mb-1 d-block"></i>
+                <div class="value" id="humidity">—</div>
+                <div class="label">Humidity</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-item glass-card">
+                <i class="bi bi-wind text-warning mb-1 d-block"></i>
+                <div class="value" id="windSpeed">—</div>
+                <div class="label">Wind Speed</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-item glass-card">
+                <i class="bi bi-speedometer2 text-success mb-1 d-block"></i>
+                <div class="value" id="pressure">—</div>
+                <div class="label">Pressure</div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="stat-item glass-card">
+                <i class="bi bi-eye text-warning mb-1 d-block"></i>
+                <div class="value" id="visibility">—</div>
+                <div class="label">Visibility</div>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-around mt-2 sunrise-sunset">
+            <span><i class="bi bi-sunrise-fill text-warning me-1"></i><span id="sunrise">—</span></span>
+            <span><i class="bi bi-sunset-fill text-orange me-1" style="color:#fb923c"></i><span id="sunset">—</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forecast -->
+    <div class="glass-card p-4 mb-4">
+      <h6 class="fw-semibold mb-3"><i class="bi bi-calendar3 me-2 text-info"></i>24-Hour Forecast</h6>
+      <div class="d-flex gap-2 overflow-auto pb-1" id="forecastRow">
+        <div class="text-white-50 text-center py-3 w-100">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Recent Searches -->
+    <div class="glass-card p-4">
+      <h6 class="fw-semibold mb-3"><i class="bi bi-clock-history me-2 text-warning"></i>Recent Searches</h6>
+      <div id="historyList"><p class="text-white-50 small">No history yet</p></div>
+    </div>
+  </div>
+
+  <!-- Popular cities quick-access -->
+  <div class="mt-4 text-center">
+    <p class="text-white-50 small mb-2">Quick search:</p>
+    <div class="d-flex flex-wrap justify-content-center gap-2">
+      ${["Chennai","Mumbai","Delhi","London","Tokyo","New York","Dubai","Singapore"].map(c =>
+        `<button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border-radius:50px;" onclick="quickSearch('${c}')">${c}</button>`
+      ).join('')}
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API = "";
+
+async function searchWeather() {
+  const city = document.getElementById("cityInput").value.trim();
+  if (!city) return;
+  showLoading(true);
+  hideError();
+  try {
+    const res = await fetch(`${API}/weather?city=${encodeURIComponent(city)}`);
+    const data = await res.json();
+    if (!res.ok) { showError(data.detail || "Something went wrong"); return; }
+    renderWeather(data);
+    loadForecast(city);
+    loadHistory();
+    document.getElementById("mainWeather").style.display = "block";
+  } catch (e) {
+    showError("Network error. Please try again.");
+  } finally {
+    showLoading(false);
+  }
+}
+
+function quickSearch(city) {
+  document.getElementById("cityInput").value = city;
+  searchWeather();
+}
+
+function renderWeather(d) {
+  document.getElementById("cityName").textContent = `${d.city}, ${d.country}`;
+  document.getElementById("weatherDate").textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+  document.getElementById("tempDisplay").textContent = `${d.temperature}°C`;
+  document.getElementById("weatherDesc").textContent = d.description;
+  document.getElementById("feelsLike").textContent = `Feels like ${d.feels_like}°C`;
+  document.getElementById("humidity").textContent = `${d.humidity}%`;
+  document.getElementById("windSpeed").textContent = `${d.wind_speed} m/s`;
+  document.getElementById("pressure").textContent = `${d.pressure} hPa`;
+  document.getElementById("visibility").textContent = d.visibility ? `${(d.visibility/1000).toFixed(1)} km` : "N/A";
+  document.getElementById("sunrise").textContent = formatTime(d.sunrise);
+  document.getElementById("sunset").textContent = formatTime(d.sunset);
+  document.getElementById("weatherIconImg").src = `https://openweathermap.org/img/wn/${d.icon}@2x.png`;
+}
+
+async function loadForecast(city) {
+  try {
+    const res = await fetch(`${API}/forecast?city=${encodeURIComponent(city)}`);
+    if (!res.ok) return;
+    const items = await res.json();
+    document.getElementById("forecastRow").innerHTML = items.map(item => `
+      <div class="forecast-card">
+        <div class="small text-white-50">${new Date(item.time).toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"})}</div>
+        <img src="https://openweathermap.org/img/wn/${item.icon}.png" width="40" alt=""/>
+        <div class="fw-bold">${item.temp}°C</div>
+        <div class="small text-white-50">${item.humidity}%<i class="bi bi-droplet ms-1 text-info"></i></div>
+      </div>
+    `).join("");
+  } catch {}
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API}/history`);
+    const items = await res.json();
+    if (!items.length) return;
+    document.getElementById("historyList").innerHTML = items.map(h => `
+      <div class="history-item d-flex justify-content-between align-items-center" onclick="quickSearch('${h.city}')">
+        <div>
+          <span class="fw-semibold">${h.city}, ${h.country}</span>
+          <span class="text-white-50 small ms-2">${h.description}</span>
+        </div>
+        <div class="text-end">
+          <div class="fw-bold">${h.temperature}°C</div>
+          <div class="text-white-50 small">${new Date(h.searched_at + "Z").toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"})}</div>
+        </div>
+      </div>
+    `).join("");
+  } catch {}
+}
+
+function formatTime(unix) {
+  return new Date(unix * 1000).toLocaleTimeString("en-IN", {hour:"2-digit", minute:"2-digit"});
+}
+
+function showLoading(show) {
+  document.getElementById("loadingBox").classList.toggle("d-none", !show);
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorBox");
+  document.getElementById("errorMsg").textContent = msg;
+  el.style.display = "block";
+}
+
+function hideError() {
+  document.getElementById("errorBox").style.display = "none";
+}
+</script>
+</body>
+</html>
