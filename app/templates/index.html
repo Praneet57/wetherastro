@@ -149,13 +149,8 @@
 
   <!-- Popular cities quick-access -->
   <div class="mt-4 text-center">
-    <p class="text-white-50 small mb-2">Quick search:</p>
-    <div class="d-flex flex-wrap justify-content-center gap-2">
-      ${["Chennai","Mumbai","Delhi","London","Tokyo","New York","Dubai","Singapore"].map(c =>
-        `<button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border-radius:50px;" onclick="quickSearch('${c}')">${c}</button>`
-      ).join('')}
-    </div>
-  </div>
+  <p class="text-white-50 small mb-2">Quick search:</p>
+  <div class="d-flex flex-wrap justify-content-center gap-2" id="quickCities"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -255,6 +250,7 @@ function showError(msg) {
 function hideError() {
   document.getElementById("errorBox").style.display = "none";
 }
+document.getElementById("quickCities").innerHTML = ["Chennai","Mumbai","Delhi","London","Tokyo","New York","Dubai","Singapore"].map(c => `<button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;border-radius:50px;" onclick="quickSearch('${c}')">${c}</button>`).join('');
 </script>
 </body>
 </html>
